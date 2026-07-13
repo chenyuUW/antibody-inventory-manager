@@ -1,0 +1,13 @@
+.venv/
+venv/
+.idea/
+__pycache__/
+*.py[cod]
+
+backups/
+
+Antibody Inventory Master.xlsx
+~$*.xlsx
+
+.DS_Store
+Thumbs.db
