@@ -13,7 +13,55 @@ It can be used to:
 ---
 
 # 1. How to Open the Program
+# STEP 0
+# Before You Start: Install Python 3
 
+This program requires Python 3.
+
+Before opening the program for the first time, make sure Python 3 is installed on the computer.
+
+The launcher automatically creates a virtual environment and installs the required Python packages, including:
+
+* pandas
+* openpyxl
+
+However, the launcher does not install Python itself.
+
+## Windows
+
+Download and install Python 3 from the official Python website.
+
+During installation, make sure to select:
+
+```text
+Add Python to PATH
+```
+
+After installation, you can double-click:
+
+```text
+Start Antibody Manager Windows.bat
+```
+
+## macOS
+
+Install Python 3 before opening the program.
+
+After installation, you can use:
+
+```text
+Start Antibody Manager Mac.command
+```
+
+## Ubuntu / Linux
+
+Install Python 3 and virtual environment support:
+
+```bash
+sudo apt install python3 python3-venv
+```
+
+# START!
 ## Windows
 
 Find this file in the project folder:
