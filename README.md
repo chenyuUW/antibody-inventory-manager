@@ -67,7 +67,7 @@ sudo apt install python3 python3-venv
 Find this file in the project folder:
 
 ```text
-Start Antibody Manager.bat
+Start Antibody Manager Windows.bat
 ```
 
 Double-click it.
@@ -94,7 +94,7 @@ When you see the following menu, the program has started successfully:
 Find this file in the project folder:
 
 ```text
-Start Antibody Manager.command
+Start Antibody Manager Mac.command
 ```
 
 The first time you use it, follow these steps.
@@ -128,7 +128,7 @@ Important: leave one space after `+x`, and do not press Enter yet.
 Now drag this file from Finder into the Terminal window:
 
 ```text
-Start Antibody Manager.command
+Start Antibody Manager Mac.command
 ```
 
 Terminal will automatically add the full file path.
@@ -146,12 +146,12 @@ Press Enter.
 Return to the project folder and double-click:
 
 ```text
-Start Antibody Manager.command
+Start Antibody Manager Mac.command
 ```
 
 If macOS still blocks the file:
 
-1. Right-click `Start Antibody Manager.command`
+1. Right-click `Start Antibody Manager Mac.command`
 2. Select **Open**
 3. Click **Open** again in the warning window
 
@@ -439,6 +439,26 @@ blank
 
 If the requested quantity is greater than the current stock, the program will not change the inventory.
 
+### Optional user name or operation note
+
+After entering the quantity, the program may ask:
+
+```text
+Taken by / optional note:
+```
+
+This field is optional. Enter a name, initials, or a short note, for example:
+
+```text
+CL
+Suzie
+CL - TFH experiment
+```
+
+Or press Enter to skip it.
+
+The entry is saved only in the `Log` worksheet. It does not change the permanent antibody `Notes` field.
+
 ---
 
 ## 3.5 Multiple Search Results
@@ -466,6 +486,27 @@ This antibody is now OUT OF STOCK.
 ```
 
 This means no stock remains for that antibody.
+
+If the program later finds this antibody and its `Remaining` value is already `0`, it may also display the latest matching Take record from the Log, including:
+
+```text
+Time
+Note
+```
+
+For example:
+
+```text
+Latest recorded take operation:
+Time: 2026-07-13 14:32:10
+Note: CL; Last bottle removed
+```
+
+This works whether the antibody was found by Catalog or by Marker + Fluorophore, as long as one specific antibody record is identified and confirmed.
+
+It does not run when the search finds no matching antibody.
+
+The user does not need to type `Last bottle removed`; the program adds it automatically when stock becomes `0`.
 
 ---
 
@@ -565,6 +606,32 @@ If correct, enter:
 ```text
 Y
 ```
+
+### Optional user name or operation note
+
+Before saving an Add or Return operation, the program may ask:
+
+```text
+Added / returned by / optional note:
+```
+
+This field is optional. Enter a name, initials, or a short note, for example:
+
+```text
+CL
+Suzie
+CL - returned after experiment
+```
+
+The program automatically combines this entry with the Box Position change in the Log.
+
+For example:
+
+```text
+CL; Added to existing entry; Box Position: 1A;2A -> 1A;2A;3A
+```
+
+Do not manually type the automatic Box Position message.
 
 ---
 
@@ -741,6 +808,40 @@ Then select:
 ```
 
 The program will explain each field before asking for input.
+
+During registration, the program uses two different note fields:
+
+```text
+Notes:
+```
+
+This is the permanent antibody note, such as clone, lot, opened date, or storage information.
+
+```text
+Registered by / optional note:
+```
+
+This is an optional operation note saved only in the Log.
+
+For example, entering:
+
+```text
+CL
+```
+
+creates:
+
+```text
+CL; New antibody registered
+```
+
+If left blank, the Log still records:
+
+```text
+New antibody registered
+```
+
+The program adds `New antibody registered` automatically.
 
 ---
 
@@ -1514,6 +1615,17 @@ Add
 Register
 ```
 
+The Log `Notes` column may contain optional operation information, for example:
+
+```text
+CL
+CL; Last bottle removed
+CL; Added to existing entry; Box Position: 1A;2A -> 1A;2A;3A
+CL; New antibody registered
+```
+
+These Log notes are separate from the permanent antibody `Notes` field in the inventory sheet.
+
 For example:
 
 ```text
@@ -1954,13 +2066,13 @@ README.md
 Windows also needs:
 
 ```text
-Start Antibody Manager.bat
+Start Antibody Manager Windows.bat
 ```
 
 Mac also needs:
 
 ```text
-Start Antibody Manager.command
+Start Antibody Manager Mac.command
 ```
 
 Ubuntu / Linux also needs:
@@ -1993,6 +2105,8 @@ Open the program
 -> Check the antibody information
 -> Enter Y
 -> Enter the quantity
+-> Optionally enter your name or a note
+-> Confirm and save
 ```
 
 ## Add an Existing Antibody
@@ -2006,6 +2120,7 @@ Open the program
 -> Enter Y
 -> Enter the quantity to add
 -> Enter all Box Positions after the operation
+-> Optionally enter your name or a note
 -> Enter Y to save
 ```
 
@@ -2018,6 +2133,7 @@ Open the program
 -> Enter the Catalog
 -> Choose Register this as a new antibody
 -> Complete each field
+-> Optionally enter who registered it or another Log note
 -> Review the final entry
 -> Enter Y to save
 ```

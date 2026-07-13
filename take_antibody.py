@@ -15,7 +15,12 @@ from config import (
     COL_NOTES,
 )
 
-from data_io import load_inventory, save_inventory, append_log
+from data_io import (
+    load_inventory,
+    save_inventory,
+    append_log,
+    get_latest_take_log,
+)
 
 from utils import (
     normalize_for_search,
@@ -297,6 +302,10 @@ def confirm_and_take(df, row_index):
     """
     Show antibody details, ask user to confirm identity,
     then ask quantity and update inventory.
+
+    The user may optionally enter their name or an operation note.
+    This note is saved only in the Log sheet and does not change
+    the antibody's permanent Notes field in the inventory table.
     """
 
     row = df.loc[row_index]
@@ -314,12 +323,29 @@ def confirm_and_take(df, row_index):
 
     if current_remaining <= 0:
         print("\nThis antibody is already marked as OUT OF STOCK.")
+
+        latest_take = get_latest_take_log(
+            catalog=safe_cell(row, COL_CATALOG),
+            container_type=safe_cell(row, COL_CONTAINER_TYPE),
+        )
+
+        if latest_take:
+            print("\nLatest recorded take operation:")
+            print("-" * 70)
+            print(f"Time: {latest_take['Time'] or 'Unknown'}")
+            print(f"Note: {latest_take['Notes'] or 'No note recorded'}")
+            print("-" * 70)
+        else:
+            print("\nNo previous take record was found in the Log sheet.")
+
         print("Inventory was NOT changed.")
         return "done"
 
     print(f"\nCurrent remaining: {current_remaining}")
 
-    quantity = ask_positive_integer("How many bottles/tubes do you want to take? ")
+    quantity = ask_positive_integer(
+        "How many bottles/tubes do you want to take? "
+    )
 
     if quantity > current_remaining:
         print("\nNot enough inventory.")
@@ -328,30 +354,57 @@ def confirm_and_take(df, row_index):
         print("Inventory was NOT changed.")
         return "done"
 
+    print("\nOptional log information")
+    print("-" * 70)
+    print("Enter your name, initials, or any note for this operation.")
+    print("Examples: CL, Suzie, CL - TFH experiment")
+    print("Press Enter to skip.")
+    operation_note = input("Taken by / optional note: ").strip()
+
     before = current_remaining
     after = current_remaining - quantity
+
+    print("\nPlease confirm the inventory update:")
+    print("-" * 70)
+    print(f"Remaining: {before} -> {after}")
+    print(f"Log note:  {operation_note or 'None'}")
+    print("-" * 70)
+
+    final_confirm = ask_yes_no("Save this update?")
+
+    if not final_confirm:
+        print("\nInventory was NOT changed.")
+        return "done"
 
     df.loc[row_index, COL_REMAINING] = after
 
     save_inventory(df)
 
-    notes = ""
+    log_notes = operation_note
 
     if after == 0:
         print_last_bottle_warning()
-        notes = "Last bottle removed"
+
+        if log_notes:
+            log_notes = f"{log_notes}; Last bottle removed"
+        else:
+            log_notes = "Last bottle removed"
 
     write_take_log(
         row_before=row,
         change=-quantity,
         before=before,
         after=after,
-        notes=notes,
+        notes=log_notes,
     )
 
     print("\nInventory updated.")
     print(f"Before: {before}")
     print(f"After:  {after}")
+
+    if log_notes:
+        print(f"Log Notes: {log_notes}")
+
     print("Log saved.")
 
     return "done"
@@ -414,6 +467,7 @@ def get_display_unique_values(df, column_name):
             values.append(value)
 
     return values
+
 
 
 if __name__ == "__main__":

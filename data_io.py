@@ -157,3 +157,64 @@ def append_log(log_record):
             "The Excel file may be open in Excel or locked by another program. "
             "Please close the file and try again."
         )
+
+def get_latest_take_log(catalog, container_type=None):
+    """
+    Return the latest Take log matching the catalog
+    and, when provided, the container type.
+
+    Returns a dictionary or None.
+    """
+    check_inventory_file_exists()
+    ensure_log_sheet_exists()
+
+    log_df = pd.read_excel(
+        INVENTORY_FILE,
+        sheet_name=LOG_SHEET,
+        dtype=str,
+        engine="openpyxl",
+    )
+
+    if log_df.empty:
+        return None
+
+    required_columns = [
+        "Time",
+        "Action",
+        "Catalog",
+        "Container_Type",
+        "Notes",
+    ]
+
+    for column in required_columns:
+        if column not in log_df.columns:
+            return None
+
+    catalog_query = str(catalog).strip().upper()
+
+    matched = log_df[
+        (log_df["Action"].fillna("").str.strip().str.upper() == "TAKE")
+        &
+        (log_df["Catalog"].fillna("").str.strip().str.upper() == catalog_query)
+    ].copy()
+
+    if container_type:
+        container_query = str(container_type).strip().upper()
+
+        matched = matched[
+            matched["Container_Type"]
+            .fillna("")
+            .str.strip()
+            .str.upper()
+            == container_query
+        ]
+
+    if matched.empty:
+        return None
+
+    latest = matched.iloc[-1]
+
+    return {
+        "Time": str(latest.get("Time", "")).strip(),
+        "Notes": str(latest.get("Notes", "")).strip(),
+    }

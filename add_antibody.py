@@ -250,6 +250,7 @@ def confirm_and_add_to_existing(df, row_index):
     - Increase Remaining
     - Ask the user to enter all current box positions
     - Completely replace the old Box Position value
+    - Optionally record who added/returned the antibody
     """
 
     row = df.loc[row_index]
@@ -301,10 +302,18 @@ def confirm_and_add_to_existing(df, row_index):
             print(f"Input error: {error}")
             print("Please try again.")
 
+    print("\nOptional log information")
+    print("-" * 70)
+    print("Enter your name, initials, or any note for this operation.")
+    print("Examples: CL, Suzie, CL - returned after experiment")
+    print("Press Enter to skip.")
+    operation_note = input("Added / returned by / optional note: ").strip()
+
     print("\nPlease confirm the inventory update:")
     print("-" * 70)
     print(f"Remaining:     {before} -> {after}")
     print(f"Box Position:  {current_positions or 'None'} -> {new_positions}")
+    print(f"Log note:      {operation_note or 'None'}")
     print("-" * 70)
 
     final_confirm = ask_yes_no("Save this update?")
@@ -318,10 +327,15 @@ def confirm_and_add_to_existing(df, row_index):
 
     save_inventory(df)
 
-    log_notes = (
+    automatic_note = (
         f"Added to existing entry; "
         f"Box Position: {current_positions or 'None'} -> {new_positions}"
     )
+
+    if operation_note:
+        log_notes = f"{operation_note}; {automatic_note}"
+    else:
+        log_notes = automatic_note
 
     write_add_log(
         row_after=df.loc[row_index],
@@ -335,6 +349,7 @@ def confirm_and_add_to_existing(df, row_index):
     print(f"Before: {before}")
     print(f"After:  {after}")
     print(f"Box Position: {new_positions}")
+    print(f"Log Notes: {log_notes}")
     print("Log saved.")
 
     return "done"
@@ -487,6 +502,13 @@ def register_new_antibody(df, preset_catalog=None):
             )
             notes = input("Notes: ").strip()
 
+            print("\nOptional log information")
+            print("-" * 70)
+            print("Enter your name, initials, or any note for this registration.")
+            print("Examples: CL, Suzie, CL - newly received shipment")
+            print("Press Enter to skip.")
+            operation_note = input("Registered by / optional note: ").strip()
+
             new_record = {
                 COL_BOX: box,
                 COL_CD_MARKER: cd_marker,
@@ -520,12 +542,17 @@ def register_new_antibody(df, preset_catalog=None):
             df = append_new_inventory_row(df, new_record)
             save_inventory(df)
 
+            if operation_note:
+                log_notes = f"{operation_note}; New antibody registered"
+            else:
+                log_notes = "New antibody registered"
+
             write_new_registration_log(
                 new_record=new_record,
                 change=remaining,
                 before=0,
                 after=remaining,
-                notes="New antibody registered",
+                notes=log_notes,
             )
 
             print("\nNew antibody registered.")
