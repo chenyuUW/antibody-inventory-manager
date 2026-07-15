@@ -24,7 +24,13 @@ echo Installing/checking required packages...
 
 echo.
 echo Starting Antibody Inventory Manager...
-".venv\Scripts\python.exe" gate.py
-
+".venv\Scripts\python.exe" app\gate.py
+if not exist "app\gate.py" (
+    echo.
+    echo [Error] app\gate.py was not found.
+    echo Please make sure the app folder is complete.
+    pause
+    exit /b 1
+)
 echo.
 pause

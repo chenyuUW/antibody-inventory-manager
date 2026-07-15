@@ -20,12 +20,14 @@ This program requires Python 3.
 
 Before opening the program for the first time, make sure Python 3 is installed on the computer.
 
-The launcher automatically creates a virtual environment and installs the required Python packages, including:
+The startup launcher checks for and installs the required Python packages when they are missing, including:
 
 * pandas
 * openpyxl
 
-However, the launcher does not install Python itself.
+On macOS, these packages are stored in the current user's local application folder, outside the shared project folder and outside Box Drive. They are kept separate for each Python version.
+
+The launcher does not install Python itself.
 
 ## Windows
 
@@ -159,9 +161,11 @@ After this first approval, you should normally be able to double-click the file 
 
 ### Please wait while the program starts
 
-The first launch may take longer because the program needs to create its working environment and install the required components.
+The first launch may take longer because the launcher may need to install `pandas`, `openpyxl`, and their required components for the current user.
 
-After the first setup, later launches will usually still take about **6–10 seconds**. This does not mean the program is frozen. Please wait until the main menu appears.
+This normally happens only once for each user and each Python version. The packages are stored locally on that Mac, outside the shared Box folder. Later launches should reuse the installed packages and start much faster.
+
+A later launch may still take several seconds while the program loads. This does not mean the program is frozen. Please wait until the main menu appears.
 
 ---
 
@@ -244,7 +248,8 @@ The program will show:
 ```text
 1. Catalog number
 2. Marker + Fluorophore
-3. Cancel
+3. Find Marker / Common Name (reference only)
+4. Cancel
 ```
 
 ---
@@ -366,7 +371,40 @@ pecy7
 
 will be treated as similar searches.
 
+If no exact match is found, the program may offer a **rough search** using the Marker/Common Name you entered. This reference search lists all matching antibodies with their fluorophores and catalog numbers, helping you identify the laboratory's standard naming before performing the actual Take operation.
+
 ---
+
+## 3.2.1 Find Marker / Common Name (Reference Only)
+
+Select:
+
+```text
+3. Find Marker / Common Name
+```
+
+This feature is **read-only**. It does **not** modify inventory.
+
+Enter either a CD Marker or a Common Name, for example:
+
+```text
+CD25
+PD-1
+IL7RA
+```
+
+The program searches both:
+
+- CD Marker
+- Common Name
+
+Partial keywords are accepted. The results show available fluorophores and catalog numbers so that you can return and complete the Take operation using:
+
+- Catalog number
+- Marker + Fluorophore
+
+---
+
 
 ## 3.3 After the Antibody Is Found
 
@@ -463,16 +501,59 @@ The entry is saved only in the `Log` worksheet. It does not change the permanent
 
 ## 3.5 Multiple Search Results
 
-If the results contain multiple different Catalog numbers, the program will recommend searching by Catalog.
+If a Catalog search or Marker + Fluorophore search returns more than one matching record, the program displays each result with a number.
 
-If the same Catalog appears in more than one record, the program may ask you to choose between:
+For example:
 
 ```text
-Aliquot
-Standard_vial
+[1]
+CD Marker:      CD154
+Fluorophore:    PE
+Catalog:        Unknown
+Container Type: Aliquot
+Remaining:      1
+
+[2]
+CD Marker:      CD154
+Fluorophore:    PE
+Catalog:        130-113-607
+Container Type: Standard_vial
+Remaining:      2
 ```
 
-Enter the container type exactly as shown by the program.
+The program then asks:
+
+```text
+Select a result:
+```
+
+Enter the number of the exact record you want, such as:
+
+```text
+1
+```
+
+or:
+
+```text
+2
+```
+
+You may also enter:
+
+```text
+B
+```
+
+to return and search again, or:
+
+```text
+C
+```
+
+to cancel the Take operation.
+
+After choosing a record, the program displays the full antibody information and asks for confirmation before changing inventory.
 
 ---
 
@@ -1749,6 +1830,29 @@ These should match.
 ---
 
 
+# 12.1 Moving or Renaming the Project Folder
+
+The entire main project folder may be moved or renamed.
+
+For example:
+
+```text
+Antibody Inventory Manager
+Lab Antibody Inventory
+Flow Antibody Database
+```
+
+The program calculates the inventory path from the location of the `app` folder, so the outer project folder name does not need to stay fixed.
+
+However:
+
+- Keep the `app` folder inside the main project folder
+- Keep `Antibody Inventory Master.xlsx` in the main project folder
+- Keep the startup files in the main project folder
+- Do not rename required Python files inside `app`
+
+---
+
 # 13. Using a Different Antibody Inventory
 
 This program is not limited to one specific antibody collection.
@@ -1819,7 +1923,7 @@ Important:
 - Do not change the required worksheet name
 - Do not rename or remove required columns
 - Make sure `Remaining` contains whole numbers
-- Keep the replacement Excel file in the same folder as `gate.py`
+- Keep the replacement Excel file in the main project folder, outside the `app` folder
 
 ---
 
@@ -1836,12 +1940,19 @@ For example:
 Box/
 └── Shared Lab Folder/
     └── Antibody Inventory Manager/
-        ├── gate.py
-        ├── add_antibody.py
-        ├── take_antibody.py
-        ├── search_inventory.py
+        ├── app/
+        │   ├── gate.py
+        │   ├── config.py
+        │   ├── data_io.py
+        │   ├── add_antibody.py
+        │   ├── take_antibody.py
+        │   ├── search_inventory.py
+        │   └── utils.py
         ├── Antibody Inventory Master.xlsx
-        └── README.md
+        ├── README.md
+        ├── Start Antibody Manager Windows.bat
+        ├── Start Antibody Manager Mac.command
+        └── start_antibody_manager.sh
 ```
 
 After the program updates:
@@ -1851,6 +1962,16 @@ Antibody Inventory Master.xlsx
 ```
 
 Box Drive should upload the new version automatically.
+
+### macOS package storage
+
+On macOS, the launcher does **not** create a shared `.venv` folder inside the Box project. Required Python packages are installed separately for each user and Python version in:
+
+```text
+~/Library/Application Support/Antibody Inventory Manager/
+```
+
+For example, Python 3.9 and Python 3.14 use different local package folders. These local package files are not synchronized through Box Drive. Only the project files, backups, and Excel inventory are synchronized.
 
 ---
 
@@ -1908,7 +2029,7 @@ Shared through Box Drive, but used by one person at a time.
 
 # 15. Common Problems
 
-## The Program Says `openpyxl` Is Missing
+## The Program Says `openpyxl` or `pandas` Is Missing
 
 Example error:
 
@@ -1916,11 +2037,16 @@ Example error:
 ModuleNotFoundError: No module named 'openpyxl'
 ```
 
-Try:
+On macOS, try:
 
-1. Delete the `.venv` folder in the project folder
-2. Double-click the startup file again
-3. Wait for the environment to be recreated
+1. Confirm that Python 3 is installed
+2. Confirm that the internet connection is working
+3. Double-click `Start Antibody Manager Mac.command` again
+4. Allow the launcher to install the missing packages for the current user
+
+Do not create or restore a shared `.venv` folder inside Box. The current macOS launcher stores packages locally outside the Box project.
+
+On Windows or Linux, follow the setup instructions for that operating system. If the problem continues, take a screenshot of the complete terminal error and contact the maintainer.
 
 ---
 
@@ -1934,7 +2060,7 @@ Antibody Inventory Master.xlsx was not found
 
 Check:
 
-- The Excel file is in the same folder as `gate.py`
+- The Excel file is in the main project folder, outside the `app` folder
 - The filename is exactly correct
 - It has not been renamed to:
 
@@ -1965,11 +2091,20 @@ Recommended dilution
 
 ---
 
-## The Excel File Cannot Be Saved
+## The Excel File Cannot Be Saved or Appears Unavailable
 
-The most common reason is that the Excel file is still open.
+The most common reason is that the Excel file is still open or is being used by another program or environment.
 
-Close Excel and try again.
+Close:
+
+- Microsoft Excel
+- Another copy of Antibody Inventory Manager
+- Any Python process using the project
+- WSL / Ubuntu sessions that are accessing the same project folder
+
+Then open the program again.
+
+If the problem continues, confirm that no other computer is modifying the shared Box Drive copy.
 
 ---
 
@@ -2049,7 +2184,18 @@ Correct:
 
 # 16. Do Not Delete Project Files
 
-The project folder should contain:
+The main project folder should contain:
+
+```text
+app
+Antibody Inventory Master.xlsx
+README.md
+Start Antibody Manager Windows.bat
+Start Antibody Manager Mac.command
+start_antibody_manager.sh
+```
+
+The `app` folder should contain:
 
 ```text
 gate.py
@@ -2059,38 +2205,34 @@ search_inventory.py
 data_io.py
 utils.py
 config.py
-Antibody Inventory Master.xlsx
-README.md
 ```
 
-Windows also needs:
+The program creates or uses:
 
 ```text
-Start Antibody Manager Windows.bat
-```
-
-Mac also needs:
-
-```text
-Start Antibody Manager Mac.command
-```
-
-Ubuntu / Linux also needs:
-
-```text
-start_antibody_manager.sh
-```
-
-The program creates:
-
-```text
-.venv
 backups
 ```
 
+On macOS, required Python packages are stored automatically in the current user's local application folder, outside the shared project folder:
+
+```text
+~/Library/Application Support/Antibody Inventory Manager/
+```
+
+Do not move individual Python files out of the `app` folder.
+
 Do not delete `backups`.
 
-Only delete `.venv` when the program cannot start and the environment needs to be rebuilt.
+Do not create, copy, restore, or share a `.venv` folder inside the Box project. A shared virtual environment may mix different computers or Python versions and can cause startup errors or unnecessary Box uploads.
+
+Folders such as the following are development or cache files and are not required for normal use:
+
+```text
+.idea
+__pycache__
+```
+
+They may be deleted without removing inventory data.
 
 ---
 
@@ -2108,6 +2250,21 @@ Open the program
 -> Optionally enter your name or a note
 -> Confirm and save
 ```
+
+If you do not know the laboratory's standard Marker, Common Name, or Fluorophore entry:
+
+```text
+Open the program
+-> Enter 1
+-> Choose Find Marker / Common Name
+-> Enter a Marker or Common Name keyword
+-> Check the available Fluorophore and Catalog information
+-> Return to the Take Antibody menu
+-> Use Catalog or Marker + Fluorophore
+-> Complete the Take operation
+```
+
+The Find Marker / Common Name function is for reference only. It does not change inventory.
 
 ## Add an Existing Antibody
 
@@ -2164,6 +2321,14 @@ Do not continue modifying inventory if:
 - The program closes unexpectedly
 - You are not sure whether the last change was saved
 
-Take a screenshot of the error and contact the maintainer.
+Take a screenshot of the complete error and contact the maintainer. Include:
+
+- Operating system: Windows, macOS, or Linux
+- Python version, if known
+- Whether the project is stored in Box Drive
+- Whether Box Drive had finished syncing before the program was opened
+
+Maintainer:
+
 - Chenyu Li
 - CHENYU200211@OUTLOOK.COM
