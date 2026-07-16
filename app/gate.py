@@ -238,10 +238,9 @@ def main():
     """
     Main control loop.
     """
-    while True:
-        if not check_inventory_write_access():
-            input("\nPress Enter to close...")
-            sys.exit(1)
+    if not check_inventory_write_access():
+        input("\nPress Enter to close...")
+        sys.exit(1)
 
     session_started = datetime.now()
 
