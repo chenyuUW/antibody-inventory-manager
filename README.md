@@ -1414,8 +1414,8 @@ This function is read-only. It does not change inventory.
 The program provides:
 
 ```text
-1. Search by marker
-2. Search by marker + fluorophore
+1. Exact Search by marker
+2. Exact Search by marker + fluorophore
 3. Search by catalog
 4. General keyword search
 5. Show all inventory
@@ -1424,7 +1424,7 @@ The program provides:
 
 ---
 
-## 8.1 Search by Marker
+## 8.1 Exact Search by Marker
 
 Select:
 
@@ -1447,31 +1447,35 @@ HLA-DR
 - The field cannot be empty
 - You may enter a CD Marker
 - You may enter a Common Name
-- Partial keywords are accepted
 - Searching is case-insensitive
 - Searching ignores spaces, hyphens, and underscores
 
 For example, entering:
 
 ```text
-PD
+CD12
 ```
 
-may find:
+could only find:
 
 ```text
-PD-1
-PD-L1
+CD12
+```
+
+but does not match:
+
+```text
+CD123
 ```
 
 ---
 
-## 8.2 Search by Marker + Fluorophore
+## 8.2 Exact Search by Marker + Fluorophore
 
 Select:
 
 ```text
-2. Search by marker + fluorophore
+2. Exact Search by marker + fluorophore
 ```
 
 Example:
@@ -1722,7 +1726,11 @@ Change = 2
 means two bottles were added.
 
 ---
+# 11. How can I permanently remove an antibody?
 
+If you are certain that the antibody will **no longer be used**, you may delete its entire row directly from the Master Inventory. This action should be performed manually rather than through the Manager system.
+
+---
 # 11. Where Are Backups Saved?
 
 Before every inventory modification, the program creates a backup.

@@ -53,8 +53,8 @@ def search_inventory():
         print("=" * 70)
         print("Search / Preview Inventory")
         print("=" * 70)
-        print("1. Search by marker")
-        print("2. Search by marker + fluorophore")
+        print("1. Exact search by marker")
+        print("2. Exact search by marker + fluorophore")
         print("3. Search by catalog")
         print("4. General keyword search")
         print("5. Show all inventory")
@@ -111,9 +111,9 @@ def search_by_marker_flow():
     common_series = df[COL_COMMON_NAME].apply(normalize_for_search)
 
     matched = df[
-        cd_series.str.contains(marker_query, na=False)
-        | common_series.str.contains(marker_query, na=False)
-    ].copy()
+        (cd_series == marker_query)
+        | (common_series == marker_query)
+        ].copy()
 
     print_search_results(matched)
 
