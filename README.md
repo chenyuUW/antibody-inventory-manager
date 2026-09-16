@@ -18,6 +18,8 @@ It can be used to:
 
 This program requires Python 3.
 
+Go to BRI 4th floor ask IT helper desk for helping you install python if you do not know user name or password.
+
 Before opening the program for the first time, make sure Python 3 is installed on the computer.
 
 The startup launcher checks for and installs the required Python packages when they are missing, including:
@@ -169,7 +171,7 @@ A later launch may still take several seconds while the program loads. This does
 
 ---
 
-## Ubuntu / Linux
+## Ubuntu / Linux (not recommand)
 
 Find this file in the project folder:
 
@@ -558,8 +560,7 @@ After choosing a record, the program displays the full antibody information and 
 ---
 
 ## 3.6 Taking the Last Bottle
-
-If the remaining stock becomes 0, the program displays:
+If the remaining stock becomes `0`, the program displays:
 
 ```text
 LAST BOTTLE REMOVED
@@ -567,6 +568,17 @@ This antibody is now OUT OF STOCK.
 ```
 
 This means no stock remains for that antibody.
+
+When the last bottle/tube is removed, the program also clears the current `Box Position` automatically because no physical bottle remains in storage.
+
+For example:
+
+```text
+Remaining:     1 -> 0
+Box Position:  6F -> None
+```
+
+The previous Box Position is still preserved in the corresponding Take record in the `Log` worksheet.
 
 If the program later finds this antibody and its `Remaining` value is already `0`, it may also display the latest matching Take record from the Log, including:
 
@@ -580,12 +592,20 @@ For example:
 ```text
 Latest recorded take operation:
 Time: 2026-07-13 14:32:10
-Note: CL; Last bottle removed
+Note: CL; Taken from existing entry; Box Position: 6F -> None; Last bottle removed
 ```
 
 This works whether the antibody was found by Catalog or by Marker + Fluorophore, as long as one specific antibody record is identified and confirmed.
 
-It does not run when the search finds no matching antibody.
+If the bottle is later returned, the program may use the latest Take record to show the previous Box Position as a suggestion.
+
+For example:
+
+```text
+Suggested previous position: 6F
+```
+
+This suggestion is for reference only. The user must still enter the actual current Box Position manually because the bottle may be returned to a different location.
 
 The user does not need to type `Last bottle removed`; the program adds it automatically when stock becomes `0`.
 
@@ -777,6 +797,58 @@ Do not enter only:
 ```
 
 ---
+
+### 5.2.1 Returning a Bottle After the Last Bottle Was Taken
+
+If the last bottle/tube was previously taken, the inventory may currently show:
+
+```text
+Remaining: 0
+Box Position: None
+```
+
+When this bottle is later returned, use **Add / Register antibody** and add it back to the existing antibody record.
+
+If the current `Box Position` is empty, the program may check the latest matching Take record in the `Log` worksheet and display the previous location as a suggestion.
+
+For example:
+
+```text
+Current remaining: 0
+Current recorded positions: None
+
+How many bottles/tubes do you want to add / return? 1
+
+Remaining after this operation: 1
+Previous recorded positions: None
+
+Suggested previous position: 6F
+All current box positions:
+```
+
+The suggested previous position is taken from the most recent matching Take record.
+
+It is provided for reference only.
+
+The program does **not** automatically restore the old Box Position because the bottle may have been returned to a different location.
+
+Always enter the actual current location of the bottle.
+
+For example, if the bottle is returned to its previous location:
+
+```text
+Suggested previous position: 6F
+All current box positions: 6F
+```
+
+If the bottle is returned to a different location:
+
+```text
+Suggested previous position: 6F
+All current box positions: 7A
+```
+
+The new Box Position entered by the user becomes the current recorded location in the inventory.
 
 ## 5.3 Box Position Input Requirements
 
@@ -2283,8 +2355,9 @@ Open the program
 -> Enter the Catalog
 -> Check the antibody information
 -> Enter Y
--> Enter the quantity to add
--> Enter all Box Positions after the operation
+-> Enter the quantity to add / return
+-> If available, check the suggested previous Box Position
+-> Enter all actual Box Positions after the operation
 -> Optionally enter your name or a note
 -> Enter Y to save
 ```

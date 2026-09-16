@@ -12,6 +12,7 @@ from config import (
     COL_MANUFACTURER,
     COL_CONTAINER_TYPE,
     COL_REMAINING,
+    COL_BOX_POSITION,
     COL_NOTES,
 )
 
@@ -30,6 +31,7 @@ from utils import (
     print_multiple_results,
     print_last_bottle_warning,
     safe_cell,
+    validate_box_positions,
 )
 
 from search_inventory import print_search_results
@@ -357,7 +359,14 @@ def confirm_and_take(df, row_index):
         print("Inventory was NOT changed.")
         return "done"
 
+    current_positions = safe_cell(row, COL_BOX_POSITION)
+
     print(f"\nCurrent remaining: {current_remaining}")
+
+    if current_positions:
+        print(f"Current recorded positions: {current_positions}")
+    else:
+        print("Current recorded positions: None")
 
     quantity = ask_positive_integer(
         "How many bottles/tubes do you want to take? "
@@ -370,6 +379,35 @@ def confirm_and_take(df, row_index):
         print("Inventory was NOT changed.")
         return "done"
 
+    before = current_remaining
+    after = current_remaining - quantity
+
+    print(f"\nRemaining after this operation: {after}")
+    print(f"Previous recorded positions: {current_positions or 'None'}")
+
+    # If the last bottle is being removed, clear Box Position automatically.
+    if after == 0:
+        new_positions = ""
+        print("\nThis is the last bottle/tube.")
+        print("Box Position will be cleared automatically.")
+
+    else:
+        print()
+        print("Enter the complete box positions after this operation.")
+        print("This new entry will completely replace the previous Box Position.")
+        print("Use semicolons to separate multiple positions.")
+        print("Example: 1B;2B;3B")
+
+        while True:
+            try:
+                new_positions_raw = input("All current box positions: ").strip()
+                new_positions = validate_box_positions(new_positions_raw)
+                break
+
+            except ValueError as error:
+                print(f"Input error: {error}")
+                print("Please try again.")
+
     print("\nOptional log information")
     print("-" * 70)
     print("Enter your name, initials, or any note for this operation.")
@@ -377,13 +415,11 @@ def confirm_and_take(df, row_index):
     print("Press Enter to skip.")
     operation_note = input("Taken by / optional note: ").strip()
 
-    before = current_remaining
-    after = current_remaining - quantity
-
     print("\nPlease confirm the inventory update:")
     print("-" * 70)
-    print(f"Remaining: {before} -> {after}")
-    print(f"Log note:  {operation_note or 'None'}")
+    print(f"Remaining:     {before} -> {after}")
+    print(f"Box Position:  {current_positions or 'None'} -> {new_positions}")
+    print(f"Log note:      {operation_note or 'None'}")
     print("-" * 70)
 
     final_confirm = ask_yes_no("Save this update?")
@@ -393,10 +429,19 @@ def confirm_and_take(df, row_index):
         return "done"
 
     df.loc[row_index, COL_REMAINING] = after
+    df.loc[row_index, COL_BOX_POSITION] = new_positions
 
     save_inventory(df)
 
-    log_notes = operation_note
+    automatic_note = (
+        f"Taken from existing entry; "
+        f"Box Position: {current_positions or 'None'} -> {new_positions}"
+    )
+
+    if operation_note:
+        log_notes = f"{operation_note}; {automatic_note}"
+    else:
+        log_notes = automatic_note
 
     if after == 0:
         print_last_bottle_warning()
@@ -417,6 +462,7 @@ def confirm_and_take(df, row_index):
     print("\nInventory updated.")
     print(f"Before: {before}")
     print(f"After:  {after}")
+    print(f"Box Position: {new_positions}")
 
     if log_notes:
         print(f"Log Notes: {log_notes}")

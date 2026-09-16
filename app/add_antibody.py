@@ -21,7 +21,12 @@ from config import (
     COL_RECOMMENDED_DILUTION,
 )
 
-from data_io import load_inventory, save_inventory, append_log
+from data_io import (
+    load_inventory,
+    save_inventory,
+    append_log,
+    get_latest_take_log,
+)
 
 from utils import (
     normalize_for_search,
@@ -91,7 +96,7 @@ def add_by_catalog_flow():
     print("\nCatalog number")
     print("-" * 70)
     print("Enter the catalog/product number printed on the antibody label.")
-    print("Examples: 557741, 300328, 612564")
+    print("Examples: 557741, 300328, 612564, 11-1111-11")
     print("If the catalog is genuinely unavailable, enter: Unknown")
     print("Do not add extra spaces.")
     catalog = input("Catalog number: ").strip()
@@ -112,27 +117,31 @@ def add_by_catalog_flow():
 
         while True:
             print("\nWhat would you like to do?")
-            print("1. Register a new antibody with catalog marked as Unknown")
-            print("2. Re-enter catalog number")
-            print("3. Cancel")
+            print("1. Add / return an existing antibody with catalog Unknown")
+            print("2. Register a new antibody with catalog marked as Unknown")
+            print("3. Re-enter catalog number")
+            print("4. Cancel")
             print("-" * 70)
 
             choice = input("Select an option: ").strip()
 
             if choice == "1":
+                return add_existing_unknown_flow(df)
+
+            if choice == "2":
                 return register_new_antibody(
                     df,
                     preset_catalog=catalog,
                 )
 
-            if choice == "2":
+            if choice == "3":
                 return "retry"
 
-            if choice == "3":
+            if choice == "4":
                 print("\nAdd / Register cancelled.")
                 return "done"
 
-            print("\nInvalid option. Please enter 1, 2, or 3.")
+            print("\nInvalid option. Please enter 1, 2, 3, or 4.")
 
     matched = search_by_catalog(df, catalog)
 
@@ -174,6 +183,136 @@ def add_by_catalog_flow():
 
     return resolve_existing_by_container_type(df, matched)
 
+def extract_removed_box_positions(notes):
+    """
+    Extract the Box Position(s) removed in the latest Take operation.
+
+    Examples:
+        "Box Position: 3D;4D;5D -> 4D;5D"
+        -> "3D"
+
+        "Box Position: 6F -> ; Last bottle removed"
+        -> "6F"
+
+        "Box Position: 1A;2A;3A -> 2A"
+        -> "1A;3A"
+
+    Return an empty string if no removed position can be identified.
+    """
+
+    notes = str(notes).strip()
+    marker = "Box Position:"
+
+    if marker not in notes or "->" not in notes:
+        return ""
+
+    position_part = notes.split(marker, 1)[1]
+    before_text, after_text = position_part.split("->", 1)
+
+    before_text = before_text.strip()
+    after_text = after_text.strip()
+
+    # Parse positions before the Take operation.
+    if before_text.lower() == "none" or before_text == "":
+        before_positions = []
+    else:
+        before_positions = [
+            position.strip()
+            for position in before_text.split(";")
+            if position.strip()
+        ]
+
+    # Parse positions after the Take operation.
+    # Stop when a semicolon-separated item is no longer a Box Position.
+    after_positions = []
+
+    for item in after_text.split(";"):
+        item = item.strip()
+
+        if item == "" or item.lower() == "none":
+            continue
+
+        try:
+            validated_position = validate_box_positions(item)
+            after_positions.append(validated_position)
+        except ValueError:
+            break
+
+    after_positions = set(after_positions)
+
+    removed_positions = [
+        position
+        for position in before_positions
+        if position not in after_positions
+    ]
+
+    return ";".join(removed_positions)
+
+
+def add_existing_unknown_flow(df):
+    """Find an existing Unknown-catalog record by marker + fluorophore."""
+
+    marker = input("\nMarker / Target: ").strip()
+    fluorophore = input("Fluorophore: ").strip()
+
+    if marker == "":
+        print("\nMarker cannot be empty.")
+        return "retry"
+
+    if fluorophore == "":
+        print("\nFluorophore cannot be empty.")
+        return "retry"
+
+    marker_query = normalize_for_search(marker)
+    fluor_query = normalize_for_search(fluorophore)
+
+    cd_series = df[COL_CD_MARKER].apply(normalize_for_search)
+    common_series = df[COL_COMMON_NAME].apply(normalize_for_search)
+    fluor_series = df[COL_FLUOROPHORE].apply(normalize_for_search)
+    catalog_series = df[COL_CATALOG].apply(normalize_for_search)
+
+    matched = df[
+        (catalog_series == "UNKNOWN")
+        & ((cd_series == marker_query) | (common_series == marker_query))
+        & (fluor_series == fluor_query)
+    ].copy()
+
+    if len(matched) == 0:
+        print("\nNo existing Unknown-catalog antibody matched that Marker + Fluorophore.")
+        print("Inventory was NOT changed.")
+        return "retry"
+
+    if len(matched) == 1:
+        return confirm_and_add_to_existing(df, matched.index[0])
+
+    print_multiple_results(matched)
+    result_indices = list(matched.index)
+
+    while True:
+        print("\nSelect the exact existing antibody record to add / return.")
+        print("Enter the result number shown above.")
+        print("Or enter B to search again, or C to cancel.")
+        choice = input("Select a result: ").strip()
+
+        if choice.lower() == "b":
+            return "retry"
+
+        if choice.lower() == "c":
+            print("\nAdd / Register cancelled.")
+            return "done"
+
+        try:
+            selected_number = int(choice)
+        except ValueError:
+            print(f"Invalid selection. Enter 1-{len(result_indices)}, B, or C.")
+            continue
+
+        if not 1 <= selected_number <= len(result_indices):
+            print(f"Invalid selection. Enter a number from 1 to {len(result_indices)}.")
+            continue
+
+        selected_index = result_indices[selected_number - 1]
+        return confirm_and_add_to_existing(df, selected_index)
 
 def search_by_catalog(df, catalog):
     """
@@ -277,6 +416,18 @@ def confirm_and_add_to_existing(df, row_index):
     else:
         print("Current recorded positions: None")
 
+    previous_take_position = ""
+
+    latest_take = get_latest_take_log(
+        catalog=safe_cell(row, COL_CATALOG),
+        container_type=safe_cell(row, COL_CONTAINER_TYPE),
+    )
+
+    if latest_take:
+        previous_take_position = extract_removed_box_positions(
+            latest_take.get("Notes", "")
+        )
+
     quantity = ask_positive_integer(
         "How many bottles/tubes do you want to add / return? "
     )
@@ -291,6 +442,9 @@ def confirm_and_add_to_existing(df, row_index):
     print("This new entry will completely replace the previous Box Position.")
     print("Use semicolons to separate multiple positions.")
     print("Example: 1B;2B;3B")
+
+    if previous_take_position:
+        print(f"Suggested previous position: {previous_take_position}")
 
     while True:
         try:

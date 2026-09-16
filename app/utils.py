@@ -365,6 +365,7 @@ def print_multiple_results(df):
         print(f"Container Type: {safe_cell(row, COL_CONTAINER_TYPE)}")
         print(f"Remaining:      {safe_cell(row, COL_REMAINING)}")
         print(f"Box:            {safe_cell(row, COL_BOX)}")
+        print(f"Box Position:   {safe_cell(row, COL_BOX_POSITION) or 'None'}")
 
     print("\n" + "=" * 70)
 
